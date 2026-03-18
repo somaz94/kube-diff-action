@@ -7,49 +7,50 @@ case "${INPUT_SOURCE}" in
   *) echo "::error::Invalid source type '${INPUT_SOURCE}'. Must be: file, helm, or kustomize"; exit 1 ;;
 esac
 
-# Build command
-CMD="kube-diff ${INPUT_SOURCE} ${INPUT_PATH}"
+# Build command as array (safer than eval)
+CMD=(kube-diff "${INPUT_SOURCE}" "${INPUT_PATH}")
 
 # Add helm-specific flags
 if [[ "${INPUT_SOURCE}" == "helm" ]]; then
   if [[ -n "${INPUT_VALUES}" ]]; then
     IFS=',' read -ra VALUES <<< "${INPUT_VALUES}"
     for v in "${VALUES[@]}"; do
-      CMD+=" -f $(echo "${v}" | xargs)"
+      trimmed=$(echo "${v}" | xargs)
+      CMD+=(-f "${trimmed}")
     done
   fi
   if [[ -n "${INPUT_RELEASE}" ]]; then
-    CMD+=" -r ${INPUT_RELEASE}"
+    CMD+=(-r "${INPUT_RELEASE}")
   fi
 fi
 
 # Add global flags
 if [[ -n "${INPUT_NAMESPACE}" ]]; then
-  CMD+=" -n ${INPUT_NAMESPACE}"
+  CMD+=(-n "${INPUT_NAMESPACE}")
 fi
 
 if [[ -n "${INPUT_KIND}" ]]; then
-  CMD+=" -k ${INPUT_KIND}"
+  CMD+=(-k "${INPUT_KIND}")
 fi
 
 if [[ -n "${INPUT_SELECTOR}" ]]; then
-  CMD+=" -l ${INPUT_SELECTOR}"
+  CMD+=(-l "${INPUT_SELECTOR}")
 fi
 
 if [[ -n "${INPUT_OUTPUT}" ]]; then
-  CMD+=" -o ${INPUT_OUTPUT}"
+  CMD+=(-o "${INPUT_OUTPUT}")
 fi
 
 if [[ "${INPUT_SUMMARY_ONLY}" == "true" ]]; then
-  CMD+=" -s"
+  CMD+=(-s)
 fi
 
 echo "::group::Running kube-diff"
-echo "Command: ${CMD}"
+echo "Command: ${CMD[*]}"
 
 # Run kube-diff and capture output
 set +e
-RESULT=$(eval "${CMD}" 2>&1)
+RESULT=$("${CMD[@]}" 2>&1)
 EXIT_CODE=$?
 set -e
 
