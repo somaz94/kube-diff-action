@@ -1,0 +1,231 @@
+name: Smoke Test (Released Action)
+
+on:
+  workflow_dispatch:
+    inputs:
+      run:
+        description: 'workflow run'
+        required: true
+        default: 'true'
+  workflow_run:
+    workflows: ["Create release"]
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test-file:
+    name: Smoke Test (file mode)
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Create test manifests
+        run: |
+          mkdir -p /tmp/test-manifests
+          cat > /tmp/test-manifests/configmap.yaml << 'YAML'
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: test-config
+            namespace: default
+          data:
+            key: value
+          YAML
+
+      - name: Setup kind cluster
+        uses: helm/kind-action@v1
+
+      - name: Apply test manifests
+        run: kubectl apply -f /tmp/test-manifests/
+
+      - name: Run kube-diff action (no changes expected)
+        id: diff
+        uses: somaz94/kube-diff-action@v1
+        with:
+          source: file
+          path: /tmp/test-manifests/
+          namespace: default
+          output: markdown
+          comment: 'false'
+
+      - name: Verify outputs
+        run: |
+          echo "Exit code: ${{ steps.diff.outputs.exit-code }}"
+          echo "Has changes: ${{ steps.diff.outputs.has-changes }}"
+          echo "Result: ${{ steps.diff.outputs.result }}"
+          if [ "${{ steps.diff.outputs.exit-code }}" != "0" ] && [ "${{ steps.diff.outputs.exit-code }}" != "1" ]; then
+            echo "[FAIL] Unexpected exit code"
+            exit 1
+          fi
+          echo "[PASS] File mode smoke test passed"
+
+  smoke-test-helm:
+    name: Smoke Test (helm mode)
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup kind cluster
+        uses: helm/kind-action@v1
+
+      - name: Create test chart
+        run: |
+          mkdir -p /tmp/test-chart/templates
+          cat > /tmp/test-chart/Chart.yaml << 'YAML'
+          apiVersion: v2
+          name: test-chart
+          version: 0.1.0
+          YAML
+          cat > /tmp/test-chart/values.yaml << 'YAML'
+          replicas: 1
+          image: nginx:1.25
+          YAML
+          cat > /tmp/test-chart/templates/deployment.yaml << 'YAML'
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: test-app
+          spec:
+            replicas: {{ .Values.replicas }}
+            selector:
+              matchLabels:
+                app: test
+            template:
+              metadata:
+                labels:
+                  app: test
+              spec:
+                containers:
+                  - name: app
+                    image: {{ .Values.image }}
+          YAML
+
+      - name: Run kube-diff action (helm)
+        id: diff
+        uses: somaz94/kube-diff-action@v1
+        with:
+          source: helm
+          path: /tmp/test-chart/
+          release: test-release
+          output: json
+          comment: 'false'
+
+      - name: Verify outputs
+        run: |
+          echo "Exit code: ${{ steps.diff.outputs.exit-code }}"
+          echo "Has changes: ${{ steps.diff.outputs.has-changes }}"
+          if [ "${{ steps.diff.outputs.exit-code }}" != "0" ] && [ "${{ steps.diff.outputs.exit-code }}" != "1" ]; then
+            echo "[FAIL] Unexpected exit code"
+            exit 1
+          fi
+          echo "[PASS] Helm mode smoke test passed"
+
+  smoke-test-options:
+    name: Smoke Test (filter options)
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Create test manifests
+        run: |
+          mkdir -p /tmp/test-manifests
+          cat > /tmp/test-manifests/deploy.yaml << 'YAML'
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: web-app
+            namespace: default
+            labels:
+              app: web
+              env: test
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: web
+            template:
+              metadata:
+                labels:
+                  app: web
+              spec:
+                containers:
+                  - name: web
+                    image: nginx:1.25
+          YAML
+          cat > /tmp/test-manifests/svc.yaml << 'YAML'
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: web-svc
+            namespace: default
+          spec:
+            selector:
+              app: web
+            ports:
+              - port: 80
+                targetPort: 80
+          YAML
+
+      - name: Setup kind cluster
+        uses: helm/kind-action@v1
+
+      - name: Apply test manifests
+        run: kubectl apply -f /tmp/test-manifests/
+
+      - name: Test kind filter
+        id: kind-filter
+        uses: somaz94/kube-diff-action@v1
+        with:
+          source: file
+          path: /tmp/test-manifests/
+          namespace: default
+          kind: Deployment
+          output: plain
+          comment: 'false'
+
+      - name: Test selector filter
+        id: selector-filter
+        uses: somaz94/kube-diff-action@v1
+        with:
+          source: file
+          path: /tmp/test-manifests/
+          namespace: default
+          selector: app=web
+          output: plain
+          comment: 'false'
+
+      - name: Test summary-only
+        id: summary-only
+        uses: somaz94/kube-diff-action@v1
+        with:
+          source: file
+          path: /tmp/test-manifests/
+          namespace: default
+          summary-only: 'true'
+          output: plain
+          comment: 'false'
+
+      - name: Verify outputs
+        run: |
+          echo "=== Kind filter ==="
+          echo "Exit code: ${{ steps.kind-filter.outputs.exit-code }}"
+          echo "=== Selector filter ==="
+          echo "Exit code: ${{ steps.selector-filter.outputs.exit-code }}"
+          echo "=== Summary only ==="
+          echo "Exit code: ${{ steps.summary-only.outputs.exit-code }}"
+          echo "[PASS] Filter options smoke test passed"
