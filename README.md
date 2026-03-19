@@ -2,6 +2,9 @@
 
 [![CI](https://github.com/somaz94/kube-diff-action/actions/workflows/ci.yml/badge.svg)](https://github.com/somaz94/kube-diff-action/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Latest Tag](https://img.shields.io/github/v/tag/somaz94/kube-diff-action)](https://github.com/somaz94/kube-diff-action/tags)
+[![Top Language](https://img.shields.io/github/languages/top/somaz94/kube-diff-action)](https://github.com/somaz94/kube-diff-action)
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Kube%20Diff%20Action-blue?logo=github)](https://github.com/marketplace/actions/kube-diff-action)
 
 A GitHub Action that compares local Kubernetes manifests against live cluster state using [kube-diff](https://github.com/somaz94/kube-diff), and optionally posts the diff as a PR comment.
 
