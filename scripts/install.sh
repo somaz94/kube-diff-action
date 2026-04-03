@@ -57,7 +57,11 @@ if [[ ! -f "${TMPDIR}/kube-diff" ]]; then
 fi
 
 chmod +x "${TMPDIR}/kube-diff"
-sudo mv "${TMPDIR}/kube-diff" /usr/local/bin/kube-diff
+if [[ -w /usr/local/bin ]]; then
+  mv "${TMPDIR}/kube-diff" /usr/local/bin/kube-diff
+else
+  sudo mv "${TMPDIR}/kube-diff" /usr/local/bin/kube-diff
+fi
 
 echo "Installed: $(kube-diff version)"
 echo "::endgroup::"

@@ -162,6 +162,7 @@ jobs:
 | `release` | Helm release name | No | `release` |
 | `namespace` | Filter by namespace | No | |
 | `kind` | Filter by resource kind (comma-separated) | No | |
+| `name` | Filter by resource name (comma-separated) | No | |
 | `selector` | Label selector (e.g., `app=nginx,env=prod`) | No | |
 | `output` | Output format: `color`, `plain`, `json`, `markdown`, `table` | No | `markdown` |
 | `summary-only` | Show summary only | No | `false` |

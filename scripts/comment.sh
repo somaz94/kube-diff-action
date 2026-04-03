@@ -29,7 +29,7 @@ IN_DIFF=false
 
 while IFS= read -r line; do
   # Detect resource lines (e.g., "★ NEW", "~ CHANGED", "✓ OK", "✗ DELETED", "* NEW", "x DELETED")
-  if [[ "${line}" =~ ^[★~✓✗\*x\ ] && ("${line}" =~ NEW || "${line}" =~ CHANGED || "${line}" =~ OK || "${line}" =~ DELETED) ]]; then
+  if [[ "${line}" =~ ^[★~✓✗]\ .+/.+\ \( || "${line}" =~ ^[\*x~]\ .+/.+\ \( ]]; then
     # Flush previous resource
     if [[ -n "${CURRENT_RESOURCE}" ]]; then
       if [[ -n "${CURRENT_DIFF}" ]]; then

@@ -34,7 +34,11 @@ if [[ -n "${INPUT_KIND}" ]]; then
 fi
 
 if [[ -n "${INPUT_NAME:-}" ]]; then
-  CMD+=(-N "${INPUT_NAME}")
+  IFS=',' read -ra NAMES <<< "${INPUT_NAME}"
+  for n in "${NAMES[@]}"; do
+    trimmed=$(echo "${n}" | xargs)
+    CMD+=(-N "${trimmed}")
+  done
 fi
 
 if [[ -n "${INPUT_SELECTOR}" ]]; then
