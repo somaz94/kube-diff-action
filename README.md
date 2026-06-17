@@ -172,7 +172,7 @@ jobs:
 | `diff-strategy` | Comparison strategy: `live` or `last-applied` | No | `live` |
 | `comment` | Post result as PR comment | No | `true` |
 | `version` | kube-diff version to install | No | `latest` |
-| `token` | GitHub token for PR comments | No | `${{ github.token }}` |
+| `token` | GitHub token for PR comments and authenticating the version lookup (raises the GitHub API rate limit) | No | `${{ github.token }}` |
 
 <br/>
 

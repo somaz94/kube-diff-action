@@ -70,7 +70,7 @@ inputs:
     required: false
     default: 'latest'
   token:
-    description: 'GitHub token for PR comments'
+    description: 'GitHub token for PR comments and authenticating the version lookup (raises the GitHub API rate limit). Default: github.token'
     required: false
     default: ${{ github.token }}
 
@@ -92,6 +92,7 @@ runs:
       shell: bash
       env:
         VERSION: ${{ inputs.version }}
+        GITHUB_TOKEN: ${{ inputs.token }}
       run: ${{ github.action_path }}/scripts/install.sh
 
     - name: Run kube-diff

@@ -34,7 +34,17 @@ jobs:
         env:
           VERSION: latest
         run: |
+          # sudo strips GITHUB_TOKEN (no -E) -> exercises the unauthenticated fallback path on purpose
           sudo bash scripts/install.sh
+          kube-diff version
+
+      - name: Test install (latest, authenticated)
+        env:
+          VERSION: latest
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          # sudo -E preserves GITHUB_TOKEN -> exercises the authenticated version-lookup path
+          sudo -E bash scripts/install.sh
           kube-diff version
 
   test-action-file:
