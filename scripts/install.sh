@@ -3,7 +3,6 @@ set -euo pipefail
 
 VERSION="${VERSION:-latest}"
 
-# Determine OS and architecture
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
 
@@ -20,14 +19,11 @@ case "${OS}" in
   *)      echo "::error::Unsupported OS: ${OS}"; exit 1 ;;
 esac
 
-# Authenticated GitHub API calls get 5000 requests/hour vs 60/hour per source
-# IP; on shared Actions runners the unauthenticated pool is frequently exhausted
-# (403/429), so pass a token when one is available.
+# Unauthenticated API calls share a 60/h per-IP pool that shared runners often exhaust (403/429).
 AUTH_HEADER=()
 [[ -n "${GITHUB_TOKEN:-}" ]] && AUTH_HEADER=(-H "Authorization: Bearer ${GITHUB_TOKEN}")
 
-# Run curl with bounded retry + exponential backoff. Rides over the transient
-# 403/429/5xx and CDN hiccups that intermittently flake the install step.
+# Rides over the transient 403/429/5xx and CDN hiccups that flake the install step.
 curl_retry() {
   local attempt=1 max=5 delay=2
   while true; do
@@ -40,7 +36,6 @@ curl_retry() {
   done
 }
 
-# Resolve version
 if [[ "${VERSION}" == "latest" ]]; then
   echo "::group::Resolving latest kube-diff version"
   api_response=$(curl_retry ${AUTH_HEADER[@]+"${AUTH_HEADER[@]}"} \
