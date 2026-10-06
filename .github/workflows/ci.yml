@@ -24,6 +24,18 @@ jobs:
         with:
           scandir: scripts
 
+  test-scripts:
+    name: Test Scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Lint test suite
+        run: shellcheck tests/test.sh
+
+      - name: Run script tests
+        run: bash tests/test.sh
+
   test-install:
     name: Test Install Script
     runs-on: ubuntu-latest
@@ -149,12 +161,13 @@ jobs:
   ci-result:
     name: CI Result
     if: always()
-    needs: [shellcheck, test-install, test-action-file, test-action-helm]
+    needs: [shellcheck, test-scripts, test-install, test-action-file, test-action-helm]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
         run: |
           if [[ "${{ needs.shellcheck.result }}" != "success" ]] || \
+             [[ "${{ needs.test-scripts.result }}" != "success" ]] || \
              [[ "${{ needs.test-install.result }}" != "success" ]] || \
              [[ "${{ needs.test-action-file.result }}" != "success" ]] || \
              [[ "${{ needs.test-action-helm.result }}" != "success" ]]; then

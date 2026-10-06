@@ -72,6 +72,8 @@ A GitHub Action that compares local Kubernetes manifests against live cluster st
 
 ### PR comment with drift detection
 
+The comment follows `output`: `markdown`, `plain` and `color` fold each changed resource's diff into a collapsible section, while `json` and `table` are posted as a code block. A report too large for a PR comment is replaced by its summary line and a link to the workflow run.
+
 ```yaml
 name: Drift Check
 on:
@@ -168,7 +170,7 @@ jobs:
 | `summary-only` | Show summary only | No | `false` |
 | `ignore-field` | Field paths to ignore in diff (comma-separated, dot notation) | No | |
 | `context-lines` | Number of context lines in diff output | No | `3` |
-| `exit-code` | Always exit 0 even when changes are detected | No | `false` |
+| `exit-code` | Report `exit-code` as `0` even when changes are detected (`has-changes` still reports drift) | No | `false` |
 | `diff-strategy` | Comparison strategy: `live` or `last-applied` | No | `live` |
 | `comment` | Post result as PR comment | No | `true` |
 | `version` | kube-diff version to install | No | `latest` |
@@ -180,15 +182,15 @@ jobs:
 
 | Output | Description |
 |--------|-------------|
-| `result` | Full diff output text |
-| `exit-code` | `0` = no changes, `1` = changes detected |
+| `result` | Full diff output text (kube-diff's stdout; warnings and errors go to the step log) |
+| `exit-code` | `0` = no changes, `1` = changes detected, `2` = error |
 | `has-changes` | `true` if drift was detected, `false` otherwise |
 
 <br/>
 
 ## Exit Codes
 
-The action **does not fail** when drift is detected (exit code 1). Only errors (exit code 2) cause failure. Use `has-changes` output to control your workflow:
+The action **does not fail** when drift is detected (`exit-code` `1`). It fails only when kube-diff itself errors, for example on a bad path or an unreachable cluster, and then reports `exit-code` `2`. Use `has-changes` output to control your workflow:
 
 ```yaml
 - name: Fail on drift

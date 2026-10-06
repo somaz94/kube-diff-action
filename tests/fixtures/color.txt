@@ -1,0 +1,26 @@
+[33m~ CHANGED [0mConfigMap/app-config (namespace: default)
+[31m--- cluster[0m
+[32m+++ local[0m
+[36m@@ -1,6 +1,6 @@[0m
+ apiVersion: v1
+ data:
+[31m-    key: old[0m
+[32m+    key: new[0m
+     mode: prod
+ kind: ConfigMap
+ metadata:
+
+[32m★ NEW    [0mDeployment/web (namespace: default)
+[90m✓ OK     [0mService/web (namespace: default)
+[33m~ CHANGED [0mClusterRole/reader
+[31m--- cluster[0m
+[32m+++ local[0m
+[36m@@ -10,3 +10,4 @@[0m
+       verbs:
+         - get
+         - list
+[32m+        - watch[0m
+
+[31m✗ DELETED [0mSecret/old (namespace: default)
+
+Summary: 5 resources — [33m2 changed[0m, [32m1 new[0m, [31m1 deleted[0m, 1 unchanged

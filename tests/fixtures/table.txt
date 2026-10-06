@@ -1,0 +1,9 @@
+STATUS     KIND                 NAME                           NAMESPACE      
+------     ----                 ----                           ---------      
+CHANGED    ConfigMap            app-config                     default        
+NEW        Deployment           web                            default        
+OK         Service              web                            default        
+CHANGED    ClusterRole          reader                         -              
+DELETED    Secret               old                            default        
+
+Total: 5 | Changed: 2 | New: 1 | Deleted: 1 | Unchanged: 1

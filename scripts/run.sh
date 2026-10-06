@@ -62,10 +62,6 @@ if [[ -n "${INPUT_CONTEXT_LINES:-}" ]]; then
   CMD+=(-C "${INPUT_CONTEXT_LINES}")
 fi
 
-if [[ "${INPUT_EXIT_CODE:-false}" == "true" ]]; then
-  CMD+=(--exit-code)
-fi
-
 if [[ -n "${INPUT_DIFF_STRATEGY:-}" ]]; then
   CMD+=(--diff-strategy "${INPUT_DIFF_STRATEGY}")
 fi
@@ -73,21 +69,42 @@ fi
 echo "::group::Running kube-diff"
 echo "Command: ${CMD[*]}"
 
+STDERR_FILE=$(mktemp)
+trap 'rm -f "${STDERR_FILE}"' EXIT
+
 set +e
-RESULT=$("${CMD[@]}" 2>&1)
-EXIT_CODE=$?
+RESULT=$("${CMD[@]}" 2>"${STDERR_FILE}")
+KUBE_DIFF_EXIT=$?
 set -e
 
 echo "${RESULT}"
+cat "${STDERR_FILE}" >&2
 echo "::endgroup::"
 
+# kube-diff exits 1 on drift and on error alike; only an error prints "Error: " to stderr.
+ERROR_LINE=$(grep -m1 '^Error: ' "${STDERR_FILE}" || true)
+if [[ ${KUBE_DIFF_EXIT} -eq 0 ]]; then
+  EXIT_CODE=0
+elif [[ ${KUBE_DIFF_EXIT} -eq 1 && -z "${ERROR_LINE}" ]]; then
+  EXIT_CODE=1
+else
+  EXIT_CODE=2
+fi
+
+HAS_CHANGES=false
+if [[ ${EXIT_CODE} -eq 1 ]]; then
+  HAS_CHANGES=true
+fi
+
+# kube-diff's own --exit-code would hide drift from has-changes, so the input only masks the reported code.
+REPORTED_EXIT_CODE=${EXIT_CODE}
+if [[ "${HAS_CHANGES}" == "true" && "${INPUT_EXIT_CODE:-false}" == "true" ]]; then
+  REPORTED_EXIT_CODE=0
+fi
+
 {
-  echo "exit-code=${EXIT_CODE}"
-  if [[ ${EXIT_CODE} -eq 1 ]]; then
-    echo "has-changes=true"
-  else
-    echo "has-changes=false"
-  fi
+  echo "exit-code=${REPORTED_EXIT_CODE}"
+  echo "has-changes=${HAS_CHANGES}"
 } >> "${GITHUB_OUTPUT}"
 
 # Handle multiline result output
@@ -97,9 +114,7 @@ echo "::endgroup::"
   echo "KUBE_DIFF_EOF"
 } >> "${GITHUB_OUTPUT}"
 
-# Exit code 0 (no changes) and 1 (changes detected) are both success for the action
-# Only exit code 2 (error) should fail the action
 if [[ ${EXIT_CODE} -eq 2 ]]; then
-  echo "::error::kube-diff encountered an error"
+  echo "::error::kube-diff failed (exit ${KUBE_DIFF_EXIT}): ${ERROR_LINE#Error: }"
   exit 1
 fi

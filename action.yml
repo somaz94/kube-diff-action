@@ -38,7 +38,7 @@ inputs:
     required: false
     default: ''
   output:
-    description: 'Output format for diff result: color, plain, json, markdown'
+    description: 'Output format for diff result: color, plain, json, markdown, table'
     required: false
     default: 'markdown'
   summary-only:
@@ -54,7 +54,7 @@ inputs:
     required: false
     default: ''
   exit-code:
-    description: 'Always exit 0 even when changes are detected'
+    description: 'Report exit-code 0 even when changes are detected (has-changes still reports drift)'
     required: false
     default: 'false'
   diff-strategy:
@@ -79,7 +79,7 @@ outputs:
     description: 'Diff output text'
     value: ${{ steps.diff.outputs.result }}
   exit-code:
-    description: 'Exit code from kube-diff (0=no changes, 1=changes detected)'
+    description: 'Diff status (0=no changes, 1=changes detected, 2=error)'
     value: ${{ steps.diff.outputs.exit-code }}
   has-changes:
     description: 'Whether changes were detected (true/false)'
@@ -122,4 +122,6 @@ runs:
         GH_TOKEN: ${{ inputs.token }}
         DIFF_RESULT: ${{ steps.diff.outputs.result }}
         HAS_CHANGES: ${{ steps.diff.outputs.has-changes }}
+        INPUT_OUTPUT: ${{ inputs.output }}
+        INPUT_SUMMARY_ONLY: ${{ inputs.summary-only }}
       run: ${{ github.action_path }}/scripts/comment.sh

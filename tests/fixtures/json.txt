@@ -1,0 +1,38 @@
+{
+  "total": 5,
+  "changed": 2,
+  "new": 1,
+  "deleted": 1,
+  "unchanged": 1,
+  "resources": [
+    {
+      "kind": "ConfigMap",
+      "name": "app-config",
+      "namespace": "default",
+      "status": "changed"
+    },
+    {
+      "kind": "Deployment",
+      "name": "web",
+      "namespace": "default",
+      "status": "new"
+    },
+    {
+      "kind": "Service",
+      "name": "web",
+      "namespace": "default",
+      "status": "unchanged"
+    },
+    {
+      "kind": "ClusterRole",
+      "name": "reader",
+      "status": "changed"
+    },
+    {
+      "kind": "Secret",
+      "name": "old",
+      "namespace": "default",
+      "status": "deleted"
+    }
+  ]
+}
