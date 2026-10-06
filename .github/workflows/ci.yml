@@ -95,11 +95,58 @@ jobs:
           output: markdown
           comment: 'false'
 
-      - name: Verify outputs
+      - name: Verify no drift right after apply
+        env:
+          EXIT_CODE: ${{ steps.diff.outputs.exit-code }}
+          HAS_CHANGES: ${{ steps.diff.outputs.has-changes }}
+          RESULT: ${{ steps.diff.outputs.result }}
         run: |
-          echo "Exit code: ${{ steps.diff.outputs.exit-code }}"
-          echo "Has changes: ${{ steps.diff.outputs.has-changes }}"
-          echo "Result: ${{ steps.diff.outputs.result }}"
+          echo "${RESULT}"
+          if [[ "${EXIT_CODE}" != "0" || "${HAS_CHANGES}" != "false" ]]; then
+            echo "::error::expected exit-code=0 has-changes=false, got ${EXIT_CODE}/${HAS_CHANGES}"
+            exit 1
+          fi
+
+      - name: Introduce drift
+        run: kubectl patch configmap test-config -n default --type merge -p '{"data":{"key":"drifted"}}'
+
+      - name: Run kube-diff action (drift)
+        id: drift
+        uses: ./
+        with:
+          source: file
+          path: /tmp/test-manifests/
+          namespace: default
+          exit-code: 'true'
+          comment: 'false'
+
+      - name: Verify drift is reported
+        env:
+          EXIT_CODE: ${{ steps.drift.outputs.exit-code }}
+          HAS_CHANGES: ${{ steps.drift.outputs.has-changes }}
+        run: |
+          if [[ "${EXIT_CODE}" != "0" || "${HAS_CHANGES}" != "true" ]]; then
+            echo "::error::expected exit-code=0 (masked) has-changes=true, got ${EXIT_CODE}/${HAS_CHANGES}"
+            exit 1
+          fi
+
+      - name: Run kube-diff action (bad path)
+        id: broken
+        continue-on-error: true
+        uses: ./
+        with:
+          source: file
+          path: /tmp/does-not-exist/
+          comment: 'false'
+
+      - name: Verify a kube-diff error fails the action
+        env:
+          OUTCOME: ${{ steps.broken.outcome }}
+        run: |
+          if [[ "${OUTCOME}" != "failure" ]]; then
+            echo "::error::expected the action to fail on a bad path, got outcome=${OUTCOME}"
+            exit 1
+          fi
 
   test-action-helm:
     name: Test Action (helm mode)
@@ -153,10 +200,15 @@ jobs:
           output: json
           comment: 'false'
 
-      - name: Verify outputs
+      - name: Verify uninstalled release is reported as drift
+        env:
+          EXIT_CODE: ${{ steps.diff.outputs.exit-code }}
+          HAS_CHANGES: ${{ steps.diff.outputs.has-changes }}
         run: |
-          echo "Exit code: ${{ steps.diff.outputs.exit-code }}"
-          echo "Has changes: ${{ steps.diff.outputs.has-changes }}"
+          if [[ "${EXIT_CODE}" != "1" || "${HAS_CHANGES}" != "true" ]]; then
+            echo "::error::expected exit-code=1 has-changes=true, got ${EXIT_CODE}/${HAS_CHANGES}"
+            exit 1
+          fi
 
   ci-result:
     name: CI Result
