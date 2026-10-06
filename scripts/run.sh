@@ -81,7 +81,7 @@ echo "${RESULT}"
 cat "${STDERR_FILE}" >&2
 echo "::endgroup::"
 
-# kube-diff exits 1 on drift and on error alike; only an error prints "Error: " to stderr.
+# kube-diff exits 2 on error since v0.5.3; older releases exit 1 for errors too, and only their "Error: " line tells them from drift.
 ERROR_LINE=$(grep -m1 '^Error: ' "${STDERR_FILE}" || true)
 if [[ ${KUBE_DIFF_EXIT} -eq 0 ]]; then
   EXIT_CODE=0
