@@ -35,7 +35,8 @@ emit_resource() {
   if [[ -n "${diff}" ]]; then
     printf "<details>\n<summary>%s</summary>\n\n\`\`\`diff\n%s\`\`\`\n\n</details>\n\n" "${resource}" "${diff}"
   else
-    printf -- '- %s\n' "${resource}"
+    # Code span keeps the "* NEW" label from parsing as a nested list marker.
+    printf -- "- \`%s\`\n" "${resource}"
   fi
 }
 

@@ -110,16 +110,16 @@ check "markdown: details balanced" test "$(occurrences "${BODY}" "<details>")" -
 
 render plain
 check "plain: cluster-scoped resource kept" contains "${BODY}" "<summary>~ CHANGED ClusterRole/reader</summary>"
-check "plain: new resource is a bullet" contains "${BODY}" "- * NEW    Deployment/web (namespace: default)"
+check "plain: new resource is a bullet" contains "${BODY}" "- \`* NEW    Deployment/web (namespace: default)\`"
 check "plain: no diff attributed to the new resource" lacks "${BODY}" "<summary>* NEW"
-check "plain: unchanged resource kept" contains "${BODY}" "-   OK     Service/web (namespace: default)"
+check "plain: unchanged resource kept" contains "${BODY}" "- \`  OK     Service/web (namespace: default)\`"
 check "plain: summary line kept" contains "${BODY}" "**Summary: 5 resources"
 check "plain: footer separated from summary" contains "${BODY}" $'unchanged**\n\n---'
 
 render color
 check "color: ANSI escapes stripped" lacks "${BODY}" $'\033'
-check "color: new resource is a bullet" contains "${BODY}" "- ★ NEW    Deployment/web (namespace: default)"
-check "color: unchanged resource kept" contains "${BODY}" "- ✓ OK     Service/web (namespace: default)"
+check "color: new resource is a bullet" contains "${BODY}" "- \`★ NEW    Deployment/web (namespace: default)\`"
+check "color: unchanged resource kept" contains "${BODY}" "- \`✓ OK     Service/web (namespace: default)\`"
 check "color: cluster-scoped resource kept" contains "${BODY}" "<summary>~ CHANGED ClusterRole/reader</summary>"
 
 render json
